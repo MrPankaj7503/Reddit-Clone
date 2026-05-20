@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Reddit Clone - Single File</title>
+
+<style>
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#dae0e6;
+}
+
+nav{
+    background:white;
+    padding:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+nav h1{
+    margin:0;
+}
+
+.container{
+    width:60%;
+    margin:20px auto;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-top:20px;
+}
+
+input, textarea{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    box-sizing:border-box;
+}
+
+button{
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    background:orange;
+    color:white;
+    cursor:pointer;
+    border-radius:5px;
+}
+
+button:hover{
+    opacity:0.9;
+}
+
+.post{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-top:20px;
+}
+
+.vote-buttons button{
+    margin-right:10px;
+}
+
+.hidden{
+    display:none;
+}
+
+.comment{
+    background:#f5f5f5;
+    padding:10px;
+    margin-top:10px;
+    border-radius:5px;
+}
+
+.center{
+    text-align:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<nav>
+    <h1>Reddit Clone</h1>
+
+    <div id="navButtons">
+
+        <button onclick="showLogin()">
+            Login
+        </button>
+
+        <button onclick="showRegister()">
+            Register
+        </button>
+
+        <button id="logoutBtn"
+                class="hidden"
+                onclick="logout()">
+            Logout
+        </button>
+
+    </div>
+</nav>
+
+
+<div class="container">
+
+    <!-- LOGIN -->
+
+    <div id="loginSection" class="card">
+
+        <h2>Login</h2>
+
+        <input type="email"
+               id="loginEmail"
+               placeholder="Email">
+
+        <input type="password"
+               id="loginPassword"
+               placeholder="Password">
+
+        <button onclick="login()">
+            Login
+        </button>
+
+    </div>
+
+
+    <!-- REGISTER -->
+
+    <div id="registerSection"
+         class="card hidden">
+
+        <h2>Register</h2>
+
+        <input type="text"
+               id="registerUsername"
+               placeholder="Username">
+
+        <input type="email"
+               id="registerEmail"
+               placeholder="Email">
+
+        <input type="password"
+               id="registerPassword"
+               placeholder="Password">
+
+        <button onclick="register()">
+            Register
+        </button>
+
+    </div>
+
+
+    <!-- APP -->
+
+    <div id="appSection"
+         class="hidden">
+
+        <!-- CREATE POST -->
+
+        <div class="card">
+
+            <h2>Create Post</h2>
+
+            <input type="text"
+                   id="postTitle"
+                   placeholder="Post title">
+
+            <textarea id="postContent"
+                      rows="5"
+                      placeholder="Write your post">
+            </textarea>
+
+            <button onclick="createPost()">
+                Create Post
+            </button>
+
+        </div>
+
+
+        <!-- POSTS -->
+
+        <div id="posts"></div>
+
+    </div>
+
+</div>
+
+<script>
+
+// ==========================
+// BACKEND URL
+// ==========================
+
+const API = "http://localhost:8080";
+
+
+// ==========================
+// LOCAL STORAGE POSTS
+// ==========================
+
+let localPosts = [];
+
+
+// ==========================
+// SHOW LOGIN
+// ==========================
+
+function showLogin(){
+
+    document.getElementById("loginSection")
+        .classList.remove("hidden");
+
+    document.getElementById("registerSection")
+        .classList.add("hidden");
+}
+
+
+// ==========================
+// SHOW REGISTER
+// ==========================
+
+function showRegister(){
+
+    document.getElementById("registerSection")
+        .classList.remove("hidden");
+
+    document.getElementById("loginSection")
+        .classList.add("hidden");
+}
+
+
+// ==========================
+// REGISTER
+// ==========================
+
+async function register(){
+
+    const username =
+        document.getElementById("registerUsername").value;
+
+    const email =
+        document.getElementById("registerEmail").value;
+
+    const password =
+        document.getElementById("registerPassword").value;
+
+    try{
+
+        const response = await fetch(
+            API + "/auth/register",
+            {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    username,
+                    email,
+                    password
+                })
+            }
+        );
+
+        const text = await response.text();
+
+        alert(text);
+
+        showLogin();
+
+    }catch(error){
+
+        alert("Backend not running. Demo mode enabled.");
+
+        localStorage.setItem("demoUser", email);
+
+        enterApp();
+    }
+}
+
+
+// ==========================
+// LOGIN
+// ==========================
+
+async function login(){
+
+    const email =
+        document.getElementById("loginEmail").value;
+
+    const password =
+        document.getElementById("loginPassword").value;
+
+    try{
+
+        const response = await fetch(
+            API + "/auth/login",
+            {
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify({
+                    email,
+                    password
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        localStorage.setItem(
+            "token",
+            data.token
+        );
+
+        enterApp();
+
+    }catch(error){
+
+        alert("Backend not running. Demo mode enabled.");
+
+        localStorage.setItem("token", "demo");
+
+        enterApp();
+    }
+}
+
+
+// ==========================
+// ENTER APP
+// ==========================
+
+function enterApp(){
+
+    document.getElementById("loginSection")
+        .classList.add("hidden");
+
+    document.getElementById("registerSection")
+        .classList.add("hidden");
+
+    document.getElementById("appSection")
+        .classList.remove("hidden");
+
+    document.getElementById("logoutBtn")
+        .classList.remove("hidden");
+
+    loadPosts();
+}
+
+
+// ==========================
+// LOGOUT
+// ==========================
+
+function logout(){
+
+    localStorage.removeItem("token");
+
+    location.reload();
+}
+
+
+// ==========================
+// CREATE POST
+// ==========================
+
+async function createPost(){
+
+    const title =
+        document.getElementById("postTitle").value;
+
+    const content =
+        document.getElementById("postContent").value;
+
+    if(title === "" || content === ""){
+
+        alert("Please fill all fields");
+
+        return;
+    }
+
+    const post = {
+
+        id: Date.now(),
+
+        title,
+
+        content,
+
+        votes:0,
+
+        comments:[]
+    };
+
+    localPosts.unshift(post);
+
+    savePosts();
+
+    document.getElementById("postTitle").value = "";
+
+    document.getElementById("postContent").value = "";
+
+    loadPosts();
+}
+
+
+// ==========================
+// LOAD POSTS
+// ==========================
+
+function loadPosts(){
+
+    const saved =
+        localStorage.getItem("posts");
+
+    if(saved){
+
+        localPosts = JSON.parse(saved);
+    }
+
+    let html = "";
+
+    localPosts.forEach(post => {
+
+        html += `
+
+        <div class="post">
+
+            <h2>${post.title}</h2>
+
+            <p>${post.content}</p>
+
+            <h4>Votes: ${post.votes}</h4>
+
+            <div class="vote-buttons">
+
+                <button onclick="upvote(${post.id})">
+                    Upvote
+                </button>
+
+                <button onclick="downvote(${post.id})">
+                    Downvote
+                </button>
+
+            </div>
+
+            <hr>
+
+            <h3>Comments</h3>
+
+            <input type="text"
+                   id="comment-${post.id}"
+                   placeholder="Write comment">
+
+            <button onclick="addComment(${post.id})">
+                Add Comment
+            </button>
+
+            <div>
+
+                ${post.comments.map(comment => `
+                    <div class="comment">
+                        ${comment}
+                    </div>
+                `).join("")}
+
+            </div>
+
+        </div>
+        `;
+    });
+
+    document.getElementById("posts")
+        .innerHTML = html;
+}
+
+
+// ==========================
+// SAVE POSTS
+// ==========================
+
+function savePosts(){
+
+    localStorage.setItem(
+        "posts",
+        JSON.stringify(localPosts)
+    );
+}
+
+
+// ==========================
+// UPVOTE
+// ==========================
+
+function upvote(id){
+
+    const post =
+        localPosts.find(p => p.id === id);
+
+    post.votes++;
+
+    savePosts();
+
+    loadPosts();
+}
+
+
+// ==========================
+// DOWNVOTE
+// ==========================
+
+function downvote(id){
+
+    const post =
+        localPosts.find(p => p.id === id);
+
+    post.votes--;
+
+    savePosts();
+
+    loadPosts();
+}
+
+
+// ==========================
+// ADD COMMENT
+// ==========================
+
+function addComment(id){
+
+    const input =
+        document.getElementById(`comment-${id}`);
+
+    const text = input.value;
+
+    if(text === "") return;
+
+    const post =
+        localPosts.find(p => p.id === id);
+
+    post.comments.push(text);
+
+    savePosts();
+
+    loadPosts();
+}
+
+
+// ==========================
+// AUTO LOGIN
+// ==========================
+
+if(localStorage.getItem("token")){
+
+    enterApp();
+}
+
+</script>
+
+</body>
+</html>
